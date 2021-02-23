@@ -26,29 +26,33 @@ function main() {
   done
 
   pushd "${config}" > /dev/null
-    IFS=" " read -r -a directories < <(find . -type d -depth 1 -print0 | xargs -0)
+    IFS=" " read -r -a directories < <(find . -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0)
   popd > /dev/null
 
   for dir in "${directories[@]}"; do
     local src dest
-    src="$( cd "${config}/${dir}" && pwd)/"
+    src="$(cd "${config}/${dir}" && pwd)/"
     dest="$(cd "${workspace}/${dir}" && pwd)/"
 
     echo "syncing from ${src} to ${dest}"
 
+    local args=(
+      --recursive
+      --verbose
+      --checksum
+      "${src}"
+      "${dest}"
+      --delete
+    )
+
     if [[ -f "${dest}/.syncignore" ]]; then
-      rsync \
-        -r -v -c "${src}" \
-        "${dest}" \
-        --delete \
-        --exclude=".syncignore" \
+      args+=(
+        --exclude=".syncignore"
         --exclude-from="${dest}/.syncignore"
-    else
-      rsync \
-        -r -v -c "${src}" \
-        "${dest}" \
-        --delete
+      )
     fi
+
+    bash -c "rsync ${args[*]}"
 
     echo
   done
