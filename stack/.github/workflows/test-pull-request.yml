@@ -18,8 +18,22 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
+    - name: Get Stack Distribution Name
+      id: distro
+      run: |
+        # Extract distro from repo name:
+        # paketo-buildpacks/jammy-tiny-stack --> jammy
+        distro="$(echo "${{ github.repository }}" | sed 's/^.*\///' | sed 's/\-.*$//')"
+        echo "Ubuntu distribution: ${distro}"
+        printf "::set-output name=distro::%s\n" "${distro}"
+
     - name: Run Acceptance Tests
-      run: ./scripts/test.sh --clean
+      run: |
+        if [[ "${{ steps.distro.outputs.distro }}" == "bionic" ]]; then
+          export "EXPERIMENTAL_ATTACH_RUN_IMAGE_SBOM=true"
+        fi
+
+        ./scripts/test.sh --clean
 
   upload:
     name: Upload Workflow Event Payload
