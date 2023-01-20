@@ -55,10 +55,10 @@ function main() {
   echo "${token}" | gh auth login --with-token
 
   fill_ids_from_input
-  add_issue_to_proj
+  project_item_id=$(add_issue_to_proj "${project_id}" "${issue_node_id}")
 
   if [ -n "${field_name}" ] && [ -n "${option_name}" ]; then
-    set_proj_item_field
+    set_proj_item_field "${project_id}" "${project_item_id}" "${field_id}" "${option_id}"
   else
     echo "field-name or option-name not set. Skipping setting project item field"
   fi
@@ -113,18 +113,27 @@ function fill_ids_from_input() {
 }
 
 function add_issue_to_proj() {
-  project_item_id="$( gh api graphql -f query='
+  local pid iid
+  pid="${1}"
+  iid="${2}"
+
+  gh api graphql -f query='
     mutation($project:ID!, $issue:ID!) {
       addProjectV2ItemById(input: {projectId: $project, contentId: $issue}) {
         item {
           id
         }
       }
-    }' -f project="${project_id}" -f issue="${issue_node_id}" --jq '.data.addProjectV2ItemById.item.id')"
-  echo "Issue (id: ${issue_node_id}) added to project (id: ${project_id}) as item (id: ${project_item_id})"
+    }' -f project="${pid}" -f issue="${iid}" --jq '.data.addProjectV2ItemById.item.id'
 }
 
 function set_proj_item_field() {
+  local pid pitemid fid oid
+  pid="${1}"
+  pitemid="${2}"
+  fid="${3}"
+  oid="${4}"
+
   gh api graphql -f query='
     mutation ($project:ID!, $item:ID!, $field:ID!, $option:String!) {
       updateProjectV2ItemFieldValue(
@@ -141,7 +150,7 @@ function set_proj_item_field() {
           id
         }
       }
-    }' -f project="${project_id}" -f item="${project_item_id}" -f field="${field_id}" -f option="${option_id}"
+    }' -f project="${pid}" -f item="${pitemid}" -f field="${fid}" -f option="${oid}"
   echo "Field (id: ${field_id}) of item (id: ${project_item_id}) updated"
 }
 
