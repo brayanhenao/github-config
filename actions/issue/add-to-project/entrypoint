@@ -6,8 +6,8 @@ shopt -s inherit_errexit
 # Github GraphQL API guide: https://docs.github.com/en/issues/planning-and-tracking-with-projects/automating-your-project/using-the-api-to-manage-projects
 
 function main() {
-  declare issue_node_id project_org project_num field_name option_name
-  declare -i project_num
+  local issue_node_id project_org project_num field_name option_name
+  local project_id field_id option_id project_item_id
 
   while [[ "${#}" != 0 ]]; do
     case "${1}" in
@@ -54,12 +54,7 @@ function main() {
 
   echo "${token}" | gh auth login --with-token
 
-  project_id=
-  field_id=
-  option_id=
   fill_ids_from_input
-
-  project_item_id=
   add_issue_to_proj
 
   if [ -n "${field_name}" ] && [ -n "${option_name}" ]; then
